@@ -23,10 +23,13 @@ if (!YOUTUBE_API_KEY) {
 }
 
 mongoose
-  .connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(
+    "mongodb+srv://nikhilbn764_db_user:nikhilbn7642025@cluster0.juvez0d.mongodb.net/youtubeApp?retryWrites=true&w=majority",
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  )
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => {
     console.error("MongoDB connection error:", err);
@@ -42,9 +45,6 @@ const videoSchema = new mongoose.Schema(
 
 const Video = mongoose.model("Video", videoSchema);
 
-/**
- * Helper: convert ISO 8601 duration to seconds (e.g. PT1H2M30S -> seconds)
- */
 function iso8601DurationToSeconds(iso) {
   const regex =
     /P(?:([\d.]+)Y)?(?:([\d.]+)M)?(?:([\d.]+)W)?(?:([\d.]+)D)?(?:T(?:([\d.]+)H)?(?:([\d.]+)M)?(?:([\d.]+)S)?)?/;
@@ -63,14 +63,12 @@ function iso8601DurationToSeconds(iso) {
 
 app.get("/videos", async (req, res) => {
   try {
-    // 1. fetch videoIds from MongoDB
     const docs = await Video.find({}).lean();
     const videoIds = docs.map((d) => d.videoId).filter(Boolean);
     if (videoIds.length === 0) {
       return res.json({ videos: [] });
     }
 
-    // 2. call YouTube API (videos.list) in batches up to 50 (we have 10)
     const idsParam = videoIds.join(",");
     const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${encodeURIComponent(
       idsParam
@@ -79,7 +77,6 @@ app.get("/videos", async (req, res) => {
     const ytResp = await axios.get(url);
     const items = ytResp.data.items || [];
 
-    // Map youtube data by id
     const metaById = {};
     items.forEach((item) => {
       const id = item.id;
@@ -97,7 +94,6 @@ app.get("/videos", async (req, res) => {
       };
     });
 
-    // Build final list preserving order from MongoDB
     const enriched = videoIds.map(
       (id) => metaById[id] || { videoId: id, title: null }
     );
