@@ -28,7 +28,11 @@ It lists videos from the backend and plays them inside the app using a YouTube p
    If using iOS simulator → http://localhost:4000.
 
 4. Start the app:
+   
    npx expo start
-5. Scan the QR code:
+   
+6. Scan the QR code:
+   
    Android → Expo Go app
+   
    iOS → Camera app
